@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Year 9 Finance Revision Game</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: scoreboard strip on top, a 5-column board (one column per skill, points rising down), question opens as a full-screen sheet for projection. */
+:root{
+  --bg:#eef2ed; --surface:#ffffff; --ink:#13241d; --muted:#56675f; --line:#cfd9d2;
+  --accent:#0e6a4e; --on-accent:#ffffff; --accent-soft:#d9ece4;
+  --sol:#1546b0; --pts:#c0271d; --gold:#b9820b;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
+  --body:"Atkinson Hyperlegible",Calibri,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e1513; --surface:#18221e; --ink:#e9f0eb; --muted:#9bada4; --line:#2c3a34;
+  --accent:#35b88a; --on-accent:#05241a; --accent-soft:#1d3a30;
+  --sol:#8fb6ff; --pts:#ff8d7d; --gold:#e6b84a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0e1513; --surface:#18221e; --ink:#e9f0eb; --muted:#9bada4; --line:#2c3a34;
+  --accent:#35b88a; --on-accent:#05241a; --accent-soft:#1d3a30;
+  --sol:#8fb6ff; --pts:#ff8d7d; --gold:#e6b84a; color-scheme:dark }
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;padding-inline:16px;padding-block:16px 40px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.4rem,3vw,2.1rem);line-height:1.1;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:700}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.warn{border-color:var(--pts);color:var(--pts)}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.team{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.team.lead{border-color:var(--gold)}
+.team .nm{font-weight:700;color:var(--muted);font-size:.9rem;overflow-wrap:anywhere}
+.team input{width:100%;font:inherit;font-weight:700;padding:2px 4px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+.team .sc{font-family:var(--display);font-weight:800;font-size:1.7rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.adj{display:flex;gap:6px}
+.adj button{flex:1;border:1.5px solid var(--line);background:var(--bg);border-radius:6px;padding:2px 0;font-weight:700}
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.col h2{font-family:var(--display);font-weight:600;font-size:clamp(.7rem,1.5vw,1.05rem);margin:0;min-height:2.6em;display:flex;align-items:flex-end;line-height:1.15;overflow-wrap:anywhere}
+.tile{position:relative;border:0;border-radius:8px;background:var(--accent);color:var(--on-accent);font-family:var(--display);font-weight:800;font-size:clamp(1rem,2.6vw,1.7rem);padding:clamp(8px,1.4vw,14px) 0;font-variant-numeric:tabular-nums}
+.tile small{position:absolute;top:3px;left:6px;font-family:var(--body);font-weight:400;font-size:.65rem;opacity:.8}
+.tile:hover{filter:brightness(1.1)}
+.tile.used{background:var(--accent-soft);color:var(--muted);text-decoration:line-through}
+.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;z-index:10;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(32px + env(safe-area-inset-bottom,0px))}
+.sheet .in{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.meta .tag{font-weight:700;color:var(--muted)}
+.meta .pv{font-family:var(--display);font-weight:800;color:var(--pts);font-size:1.5rem}
+.qtext{font-size:clamp(1.5rem,3.6vw,2.7rem);line-height:1.3;margin:0;text-wrap:pretty;overflow-wrap:anywhere}
+.pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.pick button{border:2px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 8px;font-weight:700;font-size:1.05rem;overflow-wrap:anywhere}
+.pick button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.pick button:disabled{cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.note{color:var(--muted);margin:0}
+.solution{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:18px 20px;color:var(--sol);font-size:clamp(1.15rem,2.4vw,1.7rem);display:flex;flex-direction:column;gap:10px;overflow-x:auto}
+.solution .ans{font-weight:700;border-bottom:1.5px solid var(--line);padding-bottom:10px}
+.solution .err{color:var(--muted);font-style:italic;font-size:.8em;border-top:1.5px solid var(--line);padding-top:10px}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rank li{display:flex;gap:16px;align-items:baseline;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:12px 18px;font-size:clamp(1.2rem,3vw,2rem)}
+.rank li.first{border-color:var(--gold)}
+.rank .pos{font-family:var(--display);font-weight:800;color:var(--gold);min-width:2ch}
+.rank .who{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:700}
+.rank .tot{font-family:var(--display);font-weight:800;font-variant-numeric:tabular-nums}
+math{font-size:1.05em}
+.setup{padding-top:12vh}
+.setup form{gap:16px}
+.setup label{flex-basis:100%}
+#nteams{font:inherit;font-family:var(--display);font-weight:800;font-size:2.2rem;width:5ch;padding:6px 10px;border:2px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);text-align:center}
+.btn.big{font-size:1.3rem;padding:12px 22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Financial Mathematics Revision Game</h1>
+      <p class="sub">Year 9 Advanced Maths. Tech-free. Pick a tile, answer on your whiteboard.</p>
+    </div>
+    <div class="tools">
+      <button class="btn" id="undo">Undo last award</button>
+      <button class="btn" id="adjust" aria-pressed="false">Adjust scores</button>
+      <button class="btn primary" id="end">End game</button>
+    </div>
+  </header>
+  <section class="scores" id="scores" aria-label="Scoreboard"></section>
+  <section class="board" id="board" aria-label="Question board"></section>
+</div>
+<div class="sheet" id="qsheet" hidden><div class="in">
+  <div class="meta"><span class="tag" id="qtag"></span><span class="pv" id="qpts"></span><button class="btn" id="back">Back to board</button></div>
+  <p class="qtext" id="qtext"></p>
+  <p class="note" id="picknote"></p>
+  <div class="pick" id="pick"></div>
+  <div class="row">
+    <button class="btn primary" id="award">Award points</button>
+    <button class="btn" id="nowin">No winners</button>
+    <button class="btn" id="redo" hidden>Change award</button>
+    <button class="btn primary" id="showsol" disabled>Show solution</button>
+  </div>
+  <div class="solution" id="sol" hidden></div>
+</div></div>
+<div class="sheet" id="endsheet" hidden><div class="in">
+  <div class="meta"><h1>Final ranking</h1><button class="btn" id="resume">Back to game</button></div>
+  <ol class="rank" id="rank"></ol>
+  <div class="row"><button class="btn warn" id="reset">Start a new game</button><span class="note" id="resetnote"></span></div>
+</div></div>
+<div class="sheet" id="setup" hidden><div class="in setup">
+  <h1>Financial Mathematics Revision Game</h1>
+  <form id="setupform" class="row">
+    <label for="nteams" class="qtext">How many teams are playing?</label>
+    <input id="nteams" type="number" min="2" max="12" step="1" inputmode="numeric" required>
+    <button class="btn primary big" type="submit">Start game</button>
+  </form>
+  <p class="note" id="setupnote" role="alert"></p>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+const DATA = {"skills": ["Time and pay", "Simple interest", "Compounding setup", "Growth and depreciation", "Change and reasoning"], "qs": [{"skill": "Time and pay", "pts": 100, "q": "Convert 3 years into quarters.", "ans": "12 quarters", "sol": ["$3 \\text{ years} = (3 \\times 4)$ quarters", "$= 12$ quarters"], "err": null, "n": 1}, {"skill": "Time and pay", "pts": 100, "q": "Convert 2 years into fortnights.", "ans": "52 fortnights", "sol": ["$2 \\text{ years} = (2 \\times 26)$ fortnights", "$= 52$ fortnights"], "err": "Using 24 fortnights in a year (2 per month). There are 26 fortnights in a year.", "n": 2}, {"skill": "Time and pay", "pts": 200, "q": "Convert 30 months into years.", "ans": "$2\\frac{1}{2}$ years", "sol": ["$30 \\text{ months} = \\dfrac{30}{12}$ years", "$= 2\\frac{1}{2}$ years"], "err": null, "n": 3}, {"skill": "Time and pay", "pts": 200, "q": "Convert 18 quarters into years.", "ans": "$4\\frac{1}{2}$ years", "sol": ["$18 \\text{ quarters} = \\dfrac{18}{4}$ years", "$= 4\\frac{1}{2}$ years"], "err": "Multiplying by 4 instead of dividing. Going to a larger unit means fewer of them.", "n": 4}, {"skill": "Time and pay", "pts": 300, "q": "Priya earns \\$65 000 annually. What is her weekly pay?", "ans": "\\$1250", "sol": ["$\\text{Weekly pay} = 65\\,000 \\div 52$", "$= \\$1250$", "Check: $52 \\times 1250 = 65\\,000$"], "err": null, "n": 5}, {"skill": "Time and pay", "pts": 300, "q": "Leo is paid \\$1800 per fortnight. What is his annual salary?", "ans": "\\$46 800", "sol": ["$\\text{Annual salary} = 1800 \\times 26$", "$= \\$46\\,800$"], "err": null, "n": 6}, {"skill": "Time and pay", "pts": 400, "q": "Convert 78 fortnights into quarters.", "ans": "12 quarters", "sol": ["$78 \\text{ fortnights} = \\dfrac{78}{26}$ years", "$= 3$ years", "$3 \\text{ years} = (3 \\times 4)$ quarters", "$= 12$ quarters"], "err": null, "n": 7}, {"skill": "Time and pay", "pts": 400, "q": "Mia earns \\$2600 per fortnight. Sam earns \\$5500 per month. Who earns more per year, and by how much?", "ans": "Mia, by \\$1600", "sol": ["$\\text{Mia's annual pay} = 2600 \\times 26$", "$= \\$67\\,600$", "$\\text{Sam's annual pay} = 5500 \\times 12$", "$= \\$66\\,000$", "$\\text{Difference} = 67\\,600 - 66\\,000$", "$= \\$1600$", "Mia earns \\$1600 more per year."], "err": "Comparing \\$2600 $\\times$ 2 with \\$5500. A month is longer than two fortnights.", "n": 8}, {"skill": "Time and pay", "pts": 500, "q": "Bob earns \\$31 824 annually. What is his weekly pay?", "ans": "\\$612", "sol": ["$\\text{Weekly pay} = 31\\,824 \\div 52$", "$= \\$612$", "Long division: $52 \\times 600 = 31\\,200$, leaving 624", "$52 \\times 12 = 624$", "Check: $52 \\times 612 = 31\\,824$"], "err": null, "n": 9}, {"skill": "Time and pay", "pts": 500, "q": "Jo is paid \\$1150 per week. She is offered a new annual salary of \\$62 400. By how much does her weekly pay increase?", "ans": "\\$50 per week", "sol": ["$\\text{New weekly pay} = 62\\,400 \\div 52$", "$= \\$1200$", "$\\text{Increase} = 1200 - 1150$", "$= \\$50$ per week"], "err": null, "n": 10}, {"skill": "Simple interest", "pts": 100, "q": "\\$2000 is invested at 5\\% p.a. simple interest. How much interest is earned in one year?", "ans": "\\$100", "sol": ["$\\text{Interest} = 2000 \\times \\dfrac{5}{100}$", "$= \\$100$"], "err": null, "n": 11}, {"skill": "Simple interest", "pts": 100, "q": "\\$4000 is invested at 10\\% p.a. simple interest. How much interest is earned in 3 years?", "ans": "\\$1200", "sol": ["$\\text{Interest} = 4000 \\times \\dfrac{10}{100} \\times 3$", "$= \\$1200$"], "err": null, "n": 12}, {"skill": "Simple interest", "pts": 200, "q": "\\$3000 is invested at 12\\% p.a. simple interest. What is the ending balance at the end of year 2?", "ans": "\\$3720", "sol": ["$\\text{Interest per year} = 3000 \\times \\dfrac{12}{100}$", "$= \\$360$", "$\\text{Ending balance} = 3000 + 360 \\times 2$", "$= \\$3720$"], "err": "Calculating the year 2 interest on \\$3360. Simple interest is always calculated on the original \\$3000.", "n": 13}, {"skill": "Simple interest", "pts": 200, "q": "\\$5000 is invested at 4\\% p.a. simple interest for 6 years. What is the final balance?", "ans": "\\$6200", "sol": ["$\\text{Interest} = 5000 \\times \\dfrac{4}{100} \\times 6$", "$= \\$1200$", "$\\text{Final balance} = 5000 + 1200$", "$= \\$6200$"], "err": null, "n": 14}, {"skill": "Simple interest", "pts": 300, "q": "\\$3000 is invested at 12\\% p.a. simple interest. Write an expression for the ending balance after $n$ years.", "ans": "$3000 + 360n$", "sol": ["$\\text{Interest per year} = 3000 \\times \\dfrac{12}{100}$", "$= \\$360$", "$\\text{Ending balance} = 3000 + 360n$"], "err": null, "n": 15}, {"skill": "Simple interest", "pts": 300, "q": "\\$800 is invested at 5\\% p.a. simple interest. How many years does it take to earn \\$200 in interest?", "ans": "5 years", "sol": ["$\\text{Interest per year} = 800 \\times \\dfrac{5}{100}$", "$= \\$40$", "$\\text{Number of years} = 200 \\div 40$", "$= 5$ years"], "err": null, "n": 16}, {"skill": "Simple interest", "pts": 400, "q": "\\$$P$ is invested at 5\\% p.a. simple interest. After 4 years the account holds \\$6000. Find $P$.", "ans": "$P = 5000$", "sol": ["$6000 = P\\left(1 + \\dfrac{5}{100} \\times 4\\right)$", "$6000 = 1.2P$", "$P = \\dfrac{6000}{1.2}$", "$P = 5000$"], "err": "Solving $6000 = 0.2P$. That finds a principal whose interest is \\$6000, not whose balance is \\$6000.", "n": 17}, {"skill": "Simple interest", "pts": 400, "q": "\\$2500 grows to \\$3100 in 3 years at simple interest. Find the annual interest rate.", "ans": "8\\% p.a.", "sol": ["$\\text{Total interest} = 3100 - 2500$", "$= \\$600$", "$\\text{Interest per year} = 600 \\div 3$", "$= \\$200$", "$\\text{Rate} = \\dfrac{200}{2500} \\times 100\\%$", "$= 8\\%$ p.a."], "err": null, "n": 18}, {"skill": "Simple interest", "pts": 500, "q": "An investor has \\$10 000 to split between two simple interest accounts paying 5\\% p.a. and 8\\% p.a. How much goes into each account so the total annual interest is \\$620?", "ans": "\\$6000 at 5\\% and \\$4000 at 8\\%", "sol": ["Let \\$$x$ be invested at 5\\% and \\$$(10\\,000 - x)$ at 8\\%.", "$620 = 0.05x + 0.08(10\\,000 - x)$", "$620 = 0.05x + 800 - 0.08x$", "$0.03x = 180$", "$x = 6000$", "$10\\,000 - x = 4000$", "Invest \\$6000 at 5\\% and \\$4000 at 8\\%.", "Check: $300 + 320 = 620$"], "err": "Forgetting to expand $0.08(10\\,000 - x)$ fully, or stopping at $x$ without stating both amounts.", "n": 19}, {"skill": "Simple interest", "pts": 500, "q": "Alex deposits \\$$P$ into an account earning 3\\% p.a. simple interest. After 5 years he has \\$4830. Form an equation and find $P$.", "ans": "$P = 4200$", "sol": ["$4830 = P\\left(1 + \\dfrac{3}{100} \\times 5\\right)$", "$4830 = 1.15P$", "$P = \\dfrac{4830}{1.15}$", "$P = \\dfrac{483\\,000}{115}$", "$P = 4200$", "Check: $4200 \\times 1.15 = 4830$"], "err": null, "n": 20}, {"skill": "Compounding setup", "pts": 100, "q": "Interest is compounded monthly for 3 years. How many compounding periods are there?", "ans": "36 periods", "sol": ["$n = 3 \\times 12$", "$n = 36$ periods"], "err": null, "n": 21}, {"skill": "Compounding setup", "pts": 100, "q": "The rate is 8\\% p.a., compounded quarterly. What is the rate per period?", "ans": "2\\% per quarter", "sol": ["$\\text{Rate per period} = \\dfrac{8/4}{100}$", "$= \\dfrac{2}{100}$", "$= 2\\%$ per quarter"], "err": null, "n": 22}, {"skill": "Compounding setup", "pts": 200, "q": "The rate is 6\\% p.a., compounded monthly. Write the rate per period, $R$, as a decimal.", "ans": "$R = 0.005$", "sol": ["$R = \\dfrac{6/12}{100}$", "$R = \\dfrac{0.5}{100}$", "$R = 0.005$"], "err": "Writing $R = 0.5$. The rate per month is 0.5\\%, which is 0.005 as a decimal.", "n": 23}, {"skill": "Compounding setup", "pts": 200, "q": "\\$2000 is invested at 12\\% p.a., compounded every two months, for 4 months. State the rate per period and the number of periods.", "ans": "2\\% per period, 2 periods", "sol": ["There are 6 two-month periods in a year.", "$\\text{Rate per period} = \\dfrac{12/6}{100}$", "$= \\dfrac{2}{100}$", "$= 2\\%$", "$n = 4 \\div 2$", "$n = 2$ periods"], "err": null, "n": 24}, {"skill": "Compounding setup", "pts": 300, "q": "\\$$P$ is invested at a rate of $R$ per period, compound interest. Write the ending balance after 2 periods in factorised form.", "ans": "$P(1+R)^2$", "sol": ["$\\text{End of period 1} = P + PR$", "$= P(1 + R)$", "$\\text{End of period 2} = P(1+R) + P(1+R)R$", "$= P(1+R)(1+R)$", "$= P(1+R)^2$"], "err": null, "n": 25}, {"skill": "Compounding setup", "pts": 300, "q": "\\$5000 is invested at 6\\% p.a., compounded monthly, for 3 years. Write an expression for the final amount. Do not evaluate.", "ans": "$5000(1.005)^{36}$", "sol": ["$R = \\dfrac{6/12}{100}$", "$R = 0.005$", "$n = 3 \\times 12$", "$n = 36$", "$A = 5000\\left(1 + \\dfrac{6/12}{100}\\right)^{36}$", "$A = 5000(1.005)^{36}$"], "err": "Writing $5000(1.06)^{3}$, which is annual compounding.", "n": 26}, {"skill": "Compounding setup", "pts": 400, "q": "\\$1000 is invested at 10\\% p.a., compounded annually. For year 2, state the starting balance, the interest earned and the ending balance.", "ans": "Start \\$1100, interest \\$110, end \\$1210", "sol": ["$\\text{Starting balance} = 1000 \\times 1.1$", "$= \\$1100$", "$\\text{Interest} = 1100 \\times 0.1$", "$= \\$110$", "$\\text{Ending balance} = 1100 + 110$", "$= \\$1210$"], "err": null, "n": 27}, {"skill": "Compounding setup", "pts": 400, "q": "An investment compounding quarterly has value $A = 4000(1.02)^{12}$. State the annual interest rate and the number of years.", "ans": "8\\% p.a. for 3 years", "sol": ["$\\text{Annual rate} = 2\\% \\times 4$", "$= 8\\%$ p.a.", "$\\text{Years} = 12 \\div 4$", "$= 3$ years"], "err": null, "n": 28}, {"skill": "Compounding setup", "pts": 500, "q": "\\$$P$ is invested at $r$\\% p.a., compounded monthly. Write $R$, the rate per period, in terms of $r$. Then write the starting balance, interest and ending balance for month 2 in terms of $P$ and $R$.", "ans": "$R = \\dfrac{r/12}{100}$; start $P(1+R)$, interest $P(1+R)R$, end $P(1+R)^2$", "sol": ["$R = \\dfrac{r/12}{100}$", "$\\text{Starting balance} = P(1+R)$", "$\\text{Interest} = P(1+R)R$", "$\\text{Ending balance} = P(1+R) + P(1+R)R$", "$= P(1+R)(1+R)$", "$= P(1+R)^2$"], "err": "Writing the month 2 interest as $PR$. Compound interest is charged on the new balance $P(1+R)$.", "n": 29}, {"skill": "Compounding setup", "pts": 500, "q": "\\$$P$ is invested at 24\\% p.a., compounded monthly. By what percentage has the investment grown after 2 months?", "ans": "4.04\\%", "sol": ["$R = \\dfrac{24/12}{100}$", "$R = \\dfrac{2}{100}$", "$R = 0.02$", "$A = P(1.02)^2$", "$A = 1.0404P$", "$\\text{Growth} = (1.0404 - 1) \\times 100\\%$", "$= 4.04\\%$"], "err": "Answering 4\\%. That ignores the interest earned on the first month's interest.", "n": 30}, {"skill": "Growth and depreciation", "pts": 100, "q": "\\$1000 is invested at 10\\% p.a., compounded annually. What is it worth after 1 year?", "ans": "\\$1100", "sol": ["$A = 1000 \\times 1.1$", "$A = \\$1100$"], "err": null, "n": 31}, {"skill": "Growth and depreciation", "pts": 100, "q": "A car worth \\$20 000 depreciates by 10\\% in one year. What is it worth after that year?", "ans": "\\$18 000", "sol": ["$V = 20\\,000 \\times (1 - 0.1)$", "$V = 20\\,000 \\times 0.9$", "$V = \\$18\\,000$"], "err": null, "n": 32}, {"skill": "Growth and depreciation", "pts": 200, "q": "\\$1000 is invested at 10\\% p.a., compounded annually. What is it worth after 2 years?", "ans": "\\$1210", "sol": ["$A = 1000(1.1)^2$", "$A = 1000 \\times 1.21$", "$A = \\$1210$"], "err": "Answering \\$1200, which is simple interest.", "n": 33}, {"skill": "Growth and depreciation", "pts": 200, "q": "A machine worth \\$10 000 depreciates by 20\\% each year. What will it be worth in 2 years?", "ans": "\\$6400", "sol": ["$V = 10\\,000(0.8)^2$", "$V = 10\\,000 \\times 0.64$", "$V = \\$6400$"], "err": "Subtracting 40\\% to get \\$6000. The second 20\\% is taken from the reduced value.", "n": 34}, {"skill": "Growth and depreciation", "pts": 300, "q": "\\$2000 is invested at 12\\% p.a., compounded every two months. What is it worth after 4 months?", "ans": "\\$2080.80", "sol": ["$R = \\dfrac{12/6}{100}$", "$R = \\dfrac{2}{100}$", "$R = 0.02$", "$A = 2000(1.02)^2$", "$A = 2000 \\times 1.0404$", "$A = \\$2080.80$"], "err": null, "n": 35}, {"skill": "Growth and depreciation", "pts": 300, "q": "A laptop worth \\$2000 depreciates by 10\\% each year. What is it worth after 3 years?", "ans": "\\$1458", "sol": ["$V = 2000(0.9)^3$", "$V = 2000 \\times 0.729$", "$V = \\$1458$"], "err": null, "n": 36}, {"skill": "Growth and depreciation", "pts": 400, "q": "\\$2000 is invested at 12\\% p.a., compounded monthly. Find the interest earned in 2 months.", "ans": "\\$40.20", "sol": ["$R = \\dfrac{12/12}{100}$", "$R = \\dfrac{1}{100}$", "$R = 0.01$", "$\\text{Interest} = 2000(1.01)^2 - 2000$", "$= 2000(1.0201 - 1)$", "$= 2000 \\times 0.0201$", "$= \\$40.20$"], "err": "Giving the final amount \\$2040.20 when the question asks for the interest.", "n": 37}, {"skill": "Growth and depreciation", "pts": 400, "q": "\\$5000 is invested at 8\\% p.a., compounded quarterly. Find the interest earned in 6 months.", "ans": "\\$202", "sol": ["$R = \\dfrac{8/4}{100}$", "$R = \\dfrac{2}{100}$", "$R = 0.02$", "$n = 2$ quarters", "$\\text{Interest} = 5000(1.02)^2 - 5000$", "$= 5000(1.0404 - 1)$", "$= 5000 \\times 0.0404$", "$= \\$202$"], "err": null, "n": 38}, {"skill": "Growth and depreciation", "pts": 500, "q": "A vehicle depreciates by 10\\% each year and is worth \\$7290 now. What was it worth three years ago?", "ans": "\\$10 000", "sol": ["Let \\$$x$ be the value three years ago.", "$x(0.9)^3 = 7290$", "$0.729x = 7290$", "$x = \\dfrac{7290}{0.729}$", "$x = 10\\,000$", "It was worth \\$10 000."], "err": "Calculating $7290(1.1)^3$. Going back in time means dividing by $(0.9)^3$, not multiplying by $(1.1)^3$.", "n": 39}, {"skill": "Growth and depreciation", "pts": 500, "q": "\\$4000 is invested for 3 years at 10\\% p.a. How much more interest is earned with annual compounding than with simple interest?", "ans": "\\$124 more", "sol": ["$\\text{Simple interest} = 4000 \\times 0.1 \\times 3$", "$= \\$1200$", "$\\text{Compound amount} = 4000(1.1)^3$", "$= 4000 \\times 1.331$", "$= \\$5324$", "$\\text{Compound interest} = 5324 - 4000$", "$= \\$1324$", "$\\text{Difference} = 1324 - 1200$", "$= \\$124$"], "err": null, "n": 40}, {"skill": "Change and reasoning", "pts": 100, "q": "Cathy spends 75\\% of her monthly income, \\$$y$, and saves the rest. Write her saving in terms of $y$.", "ans": "$0.25y$", "sol": ["$\\text{Saving} = y - 0.75y$", "$= 0.25y$"], "err": null, "n": 41}, {"skill": "Change and reasoning", "pts": 100, "q": "A price rises from \\$50 to \\$60. Find the percentage change.", "ans": "20\\% increase", "sol": ["$\\text{Percentage change} = \\dfrac{60 - 50}{50} \\times 100\\%$", "$= \\dfrac{10}{50} \\times 100\\%$", "$= 20\\%$"], "err": "Dividing by the new value, 60, instead of the old value, 50.", "n": 42}, {"skill": "Change and reasoning", "pts": 200, "q": "Monthly savings fall from \\$400 to \\$340. Find the percentage change.", "ans": "$-15\\%$ (a 15\\% decrease)", "sol": ["$\\text{Percentage change} = \\dfrac{340 - 400}{400} \\times 100\\%$", "$= \\dfrac{-60}{400} \\times 100\\%$", "$= -15\\%$"], "err": null, "n": 43}, {"skill": "Change and reasoning", "pts": 200, "q": "True or false, with reasoning: ``Increasing an amount by 10\\% and then decreasing the result by 10\\% returns the original amount.''", "ans": "False", "sol": ["Let the amount be \\$$x$.", "$\\text{New amount} = x \\times 1.1 \\times 0.9$", "$= 0.99x$", "False. The amount ends 1\\% lower, because the 10\\% decrease is taken from a larger value."], "err": null, "n": 44}, {"skill": "Change and reasoning", "pts": 300, "q": "True or false, with reasoning: ``Investing \\$$P$ at 12\\% p.a. compounded monthly for 1 year earns the same as 12\\% p.a. compounded annually for 1 year.''", "ans": "False", "sol": ["$\\text{Monthly: } A = P\\left(1 + \\dfrac{12/12}{100}\\right)^{12}$", "$A = P(1.01)^{12}$", "$\\text{Annually: } A = P\\left(1 + \\dfrac{12}{100}\\right)$", "$A = P(1.12)$", "After two months, monthly compounding gives $P(1.01)^2 = 1.0201P$, already more than $1.02P$.", "False. Monthly compounding earns interest on interest during the year, so $(1.01)^{12} > 1.12$."], "err": null, "n": 45}, {"skill": "Change and reasoning", "pts": 300, "q": "True or false, with reasoning: ``Investing \\$$P$ at 12\\% p.a. compounded monthly for 2 years earns the same as investing \\$$P$ at 4\\% p.a. compounded quarterly for 6 years.''", "ans": "True", "sol": ["$\\text{First: } A = P\\left(1 + \\dfrac{12/12}{100}\\right)^{24}$", "$A = P(1.01)^{24}$", "$\\text{Second: } A = P\\left(1 + \\dfrac{4/4}{100}\\right)^{24}$", "$A = P(1.01)^{24}$", "True. Both have 1\\% per period for 24 periods."], "err": "Deciding from the annual rates alone. Compare the rate per period and the number of periods.", "n": 46}, {"skill": "Change and reasoning", "pts": 400, "q": "True or false, with reasoning: ``A car depreciates by 20\\% each year and is worth \\$8000 now. Its value two years ago was $8000(1.2)^2$.''", "ans": "False; it was \\$12 500", "sol": ["Let \\$$x$ be the value two years ago.", "$x(0.8)^2 = 8000$", "$x = \\dfrac{8000}{0.64}$", "$x = 12\\,500$", "False. $8000(1.2)^2 = 11\\,520$, which is not \\$12 500."], "err": "Treating a 20\\% decrease as undone by a 20\\% increase.", "n": 47}, {"skill": "Change and reasoning", "pts": 400, "q": "Dan spends 80\\% of his monthly income, \\$$y$, and saves the rest. His expenses increase by 10\\% and his income stays the same. Find the percentage change in his savings.", "ans": "$-40\\%$ (a 40\\% decrease)", "sol": ["$\\text{Old saving} = 0.2y$", "$\\text{New expenses} = 0.8y \\times 1.1$", "$= 0.88y$", "$\\text{New saving} = y - 0.88y$", "$= 0.12y$", "$\\text{Percentage change} = \\dfrac{0.12y - 0.2y}{0.2y} \\times 100\\%$", "$= \\dfrac{-0.08}{0.2} \\times 100\\%$", "$= -40\\%$"], "err": "Answering $-10\\%$ or $-8\\%$. The change must be compared with the old saving, $0.2y$.", "n": 48}, {"skill": "Change and reasoning", "pts": 500, "q": "Dan spends 80\\% of his monthly income, \\$$y$, and saves the rest. His income decreases by 10\\% and his savings stay unchanged. Find the percentage change in his expenses.", "ans": "$-12\\frac{1}{2}\\%$", "sol": ["$\\text{New income} = 0.9y$", "$\\text{Saving} = 0.2y$", "$\\text{New expenses} = 0.9y - 0.2y$", "$= 0.7y$", "$\\text{Percentage change} = \\dfrac{0.7y - 0.8y}{0.8y} \\times 100\\%$", "$= \\dfrac{-0.1}{0.8} \\times 100\\%$", "$= -12\\frac{1}{2}\\%$"], "err": null, "n": 49}, {"skill": "Change and reasoning", "pts": 500, "q": "Eve spends 60\\% of her monthly income, \\$$y$, and saves the rest. Her income increases by 10\\% and her expenses increase by 5\\%. Find the percentage change in her savings.", "ans": "$17\\frac{1}{2}\\%$ increase", "sol": ["$\\text{Old saving} = 0.4y$", "$\\text{New income} = 1.1y$", "$\\text{New expenses} = 0.6y \\times 1.05$", "$= 0.63y$", "$\\text{New saving} = 1.1y - 0.63y$", "$= 0.47y$", "$\\text{Percentage change} = \\dfrac{0.47y - 0.4y}{0.4y} \\times 100\\%$", "$= \\dfrac{0.07}{0.4} \\times 100\\%$", "$= 17\\frac{1}{2}\\%$"], "err": null, "n": 50}], "teams": 7};
+const KEY = "y9-finance-game-v2";
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+function tex(m){
+  try{ if(window.katex) return katex.renderToString(m,{output:"mathml",throwOnError:false}); }catch(e){}
+  return "<span>"+esc(m)+"</span>";
+}
+function rich(s){ // text with $math$; \$ and \% are literal
+  let out="", buf="", math=false;
+  const flush=()=>{ out += math ? tex(buf) : esc(buf.replace(/\\\$/g,"$").replace(/\\%/g,"%").replace(/``/g,"\u201c").replace(/''/g,"\u201d")); buf=""; };
+  for(let i=0;i<s.length;i++){
+    if(s[i]==="\\" && s[i+1]==="$"){ buf+="\\$"; i++; }
+    else if(s[i]==="$"){ flush(); math=!math; }
+    else buf+=s[i];
+  }
+  flush(); return out;
+}
+function fresh(n){ return {names:Array.from({length:n},(_,i)=>"Team "+(i+1)), scores:Array(n).fill(0), used:{}, history:[]}; }
+let S = null, cur = null, picked = new Set(), adjusting = false, armed = false;
+function load(d){ if(d && Array.isArray(d.scores) && d.scores.length>=2 && Array.isArray(d.names) && d.names.length===d.scores.length) S = d; }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function drawScores(){
+  const max = Math.max(...S.scores);
+  $("scores").innerHTML = S.names.map((n,i)=>`<div class="team${max>0&&S.scores[i]===max?" lead":""}">
+    ${adjusting?`<input id="name${i}" data-name="${i}" value="${esc(n).replace(/"/g,"&quot;")}" aria-label="Team ${i+1} name">`:`<span class="nm">${esc(n)}</span>`}
+    <span class="sc">${S.scores[i]}</span>
+    ${adjusting?`<div class="adj"><button data-adj="${i}" data-d="-50" aria-label="Take 50 from ${esc(n)}">&minus;50</button><button data-adj="${i}" data-d="50" aria-label="Add 50 to ${esc(n)}">+50</button></div>`:""}
+  </div>`).join("");
+  $("undo").disabled = !S.history.length;
+}
+function drawBoard(){
+  $("board").innerHTML = DATA.skills.map(sk=>`<div class="col">${
+    DATA.qs.filter(q=>q.skill===sk).map(q=>`<button class="tile${S.used[q.n]?" used":""}" data-q="${q.n}" aria-label="Question ${q.n}, ${q.pts} points${S.used[q.n]?", used":""}"><small>${q.n}</small>${q.pts}</button>`).join("")
+  }</div>`).join("");
+}
+function drawQ(){
+  const q = cur, u = S.used[q.n];
+  $("qtag").textContent = "Question "+q.n;
+  $("qpts").textContent = q.pts+" points";
+  $("qtext").innerHTML = rich(q.q);
+  $("pick").innerHTML = S.names.map((n,i)=>`<button data-t="${i}" aria-pressed="${u?u.includes(i):picked.has(i)}"${u?" disabled":""}>${esc(n)}</button>`).join("");
+  $("picknote").textContent = u ? (u.length ? "Points awarded to "+u.map(i=>S.names[i]).join(", ")+"." : "No winners for this question.") : "Select every team with a correct whiteboard, then award the points.";
+  $("award").hidden = $("nowin").hidden = !!u;
+  $("redo").hidden = !u;
+  $("showsol").disabled = !u;
+  if(!u) $("sol").hidden = true;
+}
+function openQ(n){ cur = DATA.qs.find(q=>q.n===n); picked = new Set(); $("sol").hidden = true; drawQ(); $("qsheet").hidden = false; $("qsheet").scrollTop = 0; }
+function award(w){ S.used[cur.n] = w; w.forEach(i=>S.scores[i]+=cur.pts); S.history.push(cur.n); save(); drawScores(); drawBoard(); drawQ(); }
+function revoke(n){
+  const q = DATA.qs.find(x=>x.n===n), w = S.used[n]; if(!w) return;
+  w.forEach(i=>S.scores[i]-=q.pts); delete S.used[n]; S.history = S.history.filter(x=>x!==n);
+  save(); drawScores(); drawBoard();
+}
+function showSol(){
+  const q = cur;
+  $("sol").innerHTML = `<div class="ans">Answer: ${rich(q.ans)}</div>` + q.sol.map(l=>`<div>${rich(l)}</div>`).join("") + (q.err?`<div class="err">Common error: ${rich(q.err)}</div>`:"");
+  $("sol").hidden = false;
+}
+function drawRank(){
+  const order = S.scores.map((s,i)=>({s,i})).sort((a,b)=>b.s-a.s);
+  let pos = 0, prev = null;
+  $("rank").innerHTML = order.map((o,k)=>{ if(o.s!==prev){pos=k+1;prev=o.s;} return `<li class="${pos===1?"first":""}"><span class="pos">${pos}</span><span class="who">${esc(S.names[o.i])}</span><span class="tot">${o.s}</span></li>`; }).join("");
+}
+$("board").addEventListener("click",e=>{ const b=e.target.closest("[data-q]"); if(b) openQ(+b.dataset.q); });
+$("pick").addEventListener("click",e=>{ const b=e.target.closest("[data-t]"); if(!b||b.disabled) return; const i=+b.dataset.t; picked.has(i)?picked.delete(i):picked.add(i); b.setAttribute("aria-pressed",picked.has(i)); });
+$("award").onclick = ()=>{ if(!picked.size){ $("picknote").textContent="No team is selected. Select the winning teams, or choose No winners."; return; } award([...picked].sort((a,b)=>a-b)); };
+$("nowin").onclick = ()=>award([]);
+$("redo").onclick = ()=>{ revoke(cur.n); picked = new Set(); drawQ(); };
+$("showsol").onclick = showSol;
+$("back").onclick = ()=>{ $("qsheet").hidden = true; };
+$("undo").onclick = ()=>{ if(S.history.length) revoke(S.history[S.history.length-1]); };
+$("adjust").onclick = ()=>{ adjusting=!adjusting; $("adjust").setAttribute("aria-pressed",adjusting); $("adjust").textContent = adjusting?"Done adjusting":"Adjust scores"; drawScores(); };
+$("scores").addEventListener("click",e=>{ const b=e.target.closest("[data-adj]"); if(!b) return; S.scores[+b.dataset.adj]+= +b.dataset.d; save(); drawScores(); });
+$("scores").addEventListener("change",e=>{ const i=e.target.dataset.name; if(i===undefined) return; S.names[+i] = e.target.value.trim() || "Team "+(+i+1); save(); });
+$("end").onclick = ()=>{ armed=false; $("reset").textContent="Start a new game"; $("resetnote").textContent=""; drawRank(); $("endsheet").hidden=false; };
+$("resume").onclick = ()=>{ $("endsheet").hidden = true; };
+$("reset").onclick = ()=>{
+  if(!armed){ armed=true; $("reset").textContent="Yes, clear all scores"; $("resetnote").textContent="This clears every score and reopens all 50 tiles."; return; }
+  S = null; try{ localStorage.removeItem(KEY); }catch(e){} $("endsheet").hidden = true; askTeams();
+};
+function askTeams(){ $("setupnote").textContent=""; $("setup").hidden = false; $("nteams").focus(); }
+$("setupform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const n = Number($("nteams").value);
+  if(!Number.isInteger(n) || n<2 || n>12){ $("setupnote").textContent="Enter a whole number of teams from 2 to 12."; return; }
+  S = fresh(n); save(); drawScores(); drawBoard(); $("setup").hidden = true;
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && S){ $("qsheet").hidden = true; $("endsheet").hidden = true; } });
+function start(d){
+  if(d && d.S) load(d.S); else { try{ load(JSON.parse(localStorage.getItem(KEY))); }catch(e){} }
+  if(S){ drawScores(); drawBoard(); } else askTeams();
+}
+window.claude?.hot?.snapshot?.(()=>(S?{S}:{}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
